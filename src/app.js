@@ -2,6 +2,8 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
 import dotenv from "dotenv";
+import { setupSwagger } from './utils/swagger.js';
+
 
 // Cargar variables de entorno antes de usarlas
 dotenv.config();
@@ -15,6 +17,7 @@ import mocksRouter from './routes/mocks.router.js';
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+setupSwagger(app);
 // Configurar conexión a MongoDB
 const connectDB = async () => {
     try {
