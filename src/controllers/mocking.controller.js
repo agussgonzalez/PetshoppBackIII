@@ -3,64 +3,61 @@ import { petsService } from '../services/index.js';
 import { createHash } from '../utils/index.js';
 import { faker } from '@faker-js/faker';
 
-
-// Controlador para generar los usuarios de forma mock
+// Controlador para generar usuarios de forma mock
 const generateMockingUsers = async (req, res) => {
   try {
-    const users = [];
-    for (let i = 0; i < 50; i++) {
-      const password = await createHash('coder123');
-      const role = Math.random() > 0.5 ? 'user' : 'admin'; // Random role
-      const user = {
-        first_name: faker.name.firstName(),
-        last_name: faker.name.lastName(),
-        email: faker.internet.email(),
-        password: password,
-        role: role,
-        pets: []
-      };
-      users.push(user);
-    }
+    const users = await Promise.all(
+      Array.from({ length: 50 }, async () => {
+        const password = await createHash('coder123');
+        return {
+          first_name: faker.name.firstName(),
+          last_name: faker.name.lastName(),
+          email: faker.internet.email(),
+          password: password,
+          role: Math.random() > 0.5 ? 'user' : 'admin',
+          pets: []
+        };
+      })
+    );
+
     // Guardamos los usuarios en la base de datos
     await usersService.createUsers(users); 
     res.status(200).json(users); 
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Error al generar usuarios mock' });
   }
 };
 
-// Controlador para generar los datos de usuarios y mascotas
+// Controlador para generar datos de usuarios y mascotas
 const generateData = async (req, res) => {
   try {
     const { users, pets } = req.body;
-    const generatedUsers = [];
-    const generatedPets = [];
 
-    // Generar usuarios
-    for (let i = 0; i < users; i++) {
-      const password = await createHash('coder123');
-      const role = Math.random() > 0.5 ? 'user' : 'admin';
-      const user = {
-        first_name: faker.name.firstName(),
-        last_name: faker.name.lastName(),
-        email: faker.internet.email(),
-        password: password,
-        role: role,
-        pets: []
-      };
-      generatedUsers.push(user);
+    if (!users || !pets) {
+      return res.status(400).json({ error: 'Faltan usuarios o mascotas en el cuerpo de la solicitud' });
     }
 
-    // Generar mascotas
-    for (let i = 0; i < pets; i++) {
-      const pet = {
-        name: faker.animal.dog(),
-        age: faker.random.number({ min: 1, max: 15 }),
-        type: 'dog',
-        adopted: false
-      };
-      generatedPets.push(pet);
-    }
+    const generatedUsers = await Promise.all(
+      Array.from({ length: users }, async () => {
+        const password = await createHash('coder123');
+        return {
+          first_name: faker.name.firstName(),
+          last_name: faker.name.lastName(),
+          email: faker.internet.email(),
+          password: password,
+          role: Math.random() > 0.5 ? 'user' : 'admin',
+          pets: []
+        };
+      })
+    );
+
+    const generatedPets = Array.from({ length: pets }, () => ({
+      name: faker.animal.type(), // Cambiar si `dog` no está disponible
+      age: faker.datatype.number({ min: 1, max: 15 }),
+      type: 'dog',
+      adopted: false
+    }));
 
     // Insertar los usuarios y mascotas en la base de datos
     await usersService.createUsers(generatedUsers);
@@ -68,23 +65,25 @@ const generateData = async (req, res) => {
 
     res.status(200).json({ users: generatedUsers, pets: generatedPets });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Error al generar datos' });
   }
 };
 
 // Endpoint para generar mascotas mock
 const mockingPets = (req, res) => {
-  const pets = [];
-  for (let i = 0; i < 50; i++) {
-    const pet = {
-      name: faker.animal.dog(),
-      age: faker.random.number({ min: 1, max: 15 }),
+  try {
+    const pets = Array.from({ length: 50 }, () => ({
+      name: faker.animal.type(),
+      age: faker.datatype.number({ min: 1, max: 15 }),
       type: 'dog',
       adopted: false
-    };
-    pets.push(pet);
+    }));
+    res.status(200).json(pets);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al generar mascotas mock' });
   }
-  res.status(200).json(pets);
 };
 
 export default { generateMockingUsers, generateData, mockingPets };
